@@ -17,6 +17,8 @@ class Logger {
     const log = this.logList.get(id);
     this.deletedLogList.set(id, log);
     this.logList.delete(id);
+    log.deletedAt = new Date();
+    log.deletedBy = user.role;
   }
 
   showLog(user: User, id: string): Log {
@@ -44,9 +46,7 @@ class Logger {
     let counter = 0;
     this.logList.forEach((element) => {
       if (user.permissionLevel.includes(element.createdBy)) {
-        const log = this.logList.get(element.id);
-        this.deletedLogList.set(element.id, log);
-        this.logList.delete(element.id);
+        this.deleteLog(user, element.id);
         counter += 1;
       }
     });
@@ -76,7 +76,7 @@ class Logger {
   }
 }
 
-const newUser = new User(USERS.ADMIN);
+const newUser = new User(USERS.OWNER);
 
 const newLog = new Log(USERS.OWNER, LOGTYPE.ERROR);
 const newLog2 = new Log(USERS.ADMIN, LOGTYPE.DEBUG);
@@ -84,5 +84,5 @@ const newLog2 = new Log(USERS.ADMIN, LOGTYPE.DEBUG);
 const newLogger = new Logger();
 newLogger.addLog(newLog.id, newLog);
 newLogger.addLog(newLog2.id, newLog2);
-console.log(newLogger.deleteAllLogs(newUser));
+newLogger.deleteLog(newUser, newLog2.id);
 console.log(newLogger.deletedLogList);
