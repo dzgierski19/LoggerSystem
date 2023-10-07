@@ -1,31 +1,35 @@
 import { randomUUID } from "crypto";
+import { Clock, clock } from "./clock";
 
-export const USERS = {
-  OWNER: "OWNER",
-  ADMIN: "ADMIN",
-  BASIC: "BASIC",
-} as const;
+export type UserId = string;
 
-export type Users = (typeof USERS)[keyof typeof USERS];
+export enum USERS_TYPE {
+  BASIC,
+  ADMIN,
+  OWNER,
+}
+
+export type UserType = (typeof USERS_TYPE)[keyof typeof USERS_TYPE];
 
 export class User {
+  private readonly NUMBER_LEVEL_TO_ROLE_MAPPER: Record<UserType, string> = {
+    [USERS_TYPE.OWNER]: "OWNER",
+    [USERS_TYPE.ADMIN]: "ADMIN",
+    [USERS_TYPE.BASIC]: "BASIC",
+  };
+
   readonly id = randomUUID();
-  readonly createdAt = new Date();
-  readonly role: Users;
-  readonly permissionLevel: Users[];
-  constructor(role: Users) {
-    this.role = role;
-    this.permissionLevel = this.userPermission();
-  }
-  private userPermission() {
-    if (this.role === USERS.BASIC) {
-      return [USERS.BASIC];
-    }
-    if (this.role === USERS.ADMIN) {
-      return [USERS.BASIC, USERS.ADMIN];
-    }
-    return [USERS.BASIC, USERS.ADMIN, USERS.OWNER];
+  readonly createdAt: Date;
+  readonly role: string;
+  readonly roleLevel: USERS_TYPE;
+  deletedAt?: Date;
+
+  constructor(roleLevel: USERS_TYPE, clock: Clock) {
+    this.role = this.NUMBER_LEVEL_TO_ROLE_MAPPER[roleLevel];
+    this.roleLevel = roleLevel;
+    this.createdAt = clock();
   }
 }
 
-///czy musze wstawiac constructor gdy jest pusty?
+const newUser = new User(USERS_TYPE.BASIC, clock);
+console.log(newUser);
