@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { Clock, clock } from "./clock";
+import { Clock, clock } from "./Clock";
 
 export type UserId = string;
 
@@ -11,7 +11,7 @@ export enum USERS_TYPE {
 
 export type UserType = (typeof USERS_TYPE)[keyof typeof USERS_TYPE];
 
-const NUMBER_LEVEL_TO_ROLE_MAPPER: Record<UserType, string> = {
+export const NUMBER_LEVEL_TO_ROLE_MAPPER: Record<UserType, string> = {
   [USERS_TYPE.OWNER]: "OWNER",
   [USERS_TYPE.ADMIN]: "ADMIN",
   [USERS_TYPE.BASIC]: "BASIC",

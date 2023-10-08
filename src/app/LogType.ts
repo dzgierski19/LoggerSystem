@@ -1,5 +1,5 @@
 export const LOGTYPE = {
-  ERROR: "error",
+  ERROR: "ERROR",
   WARN: "WARN",
   INFO: "INFO",
   DEBUG: "DEBUG",
