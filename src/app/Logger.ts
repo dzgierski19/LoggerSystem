@@ -51,12 +51,12 @@ export class Logger implements ILogger {
     this.isUserDeleted(userId);
     const Logs: Log[] = [];
     const user = this.userList.list.get(userId);
+    const userRoleLevel = user.roleLevel;
     this.logList.list.forEach((element) => {
-      const userRoleLevel = user.roleLevel;
       const logCreatorLevel = this.userList.list.get(
         element.createdBy
       ).roleLevel;
-      if (logCreatorLevel <= userRoleLevel && !element.deletedAt) {
+      if (logCreatorLevel <= userRoleLevel) {
         Logs.push(element);
       }
     });
@@ -129,11 +129,13 @@ export class Logger implements ILogger {
 // const newUserList = new UserList();
 // newUserList.addItem(admin1.id, admin1);
 // newUserList.addItem(basic1.id, basic1);
+// newUserList.addItem(owner1.id, owner1);
 // const newLogList = new LogList();
-// const errorLog1 = new Log(admin1.id, LOGTYPE.ERROR, "test", clock);
-// newLogList.addItem(errorLog1.id, errorLog1);
 // const newLogger = new Logger(newUserList, newLogList);
-// newLogger.createLog(LOGTYPE.DEBUG, admin1.id, "DEBUG");
-// newLogger.deleteLog(basic1.id, errorLog1.id);
+// newLogger.createLog(LOGTYPE.DEBUG, admin1.id, "ADMIN");
+// newLogger.createLog(LOGTYPE.DEBUG, basic1.id, "BASIC");
+// newLogger.createLog(LOGTYPE.DEBUG, owner1.id, "OWNER2");
 
-// console.dir(newLogger, { depth: null });
+// console.log(newLogger.showAllLogsWithUserLevel(admin1.id));
+
+// // console.dir(newLogger, { depth: null });
