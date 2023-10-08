@@ -11,11 +11,11 @@ interface ILogger {
   createLog(log: LogType, userId: UserId, message: string): void;
   deleteLog(userId: UserId, logId: LogId): void;
   showLog(userId: UserId, logId: LogId): Log;
-  showAllLogs(userId: UserId): Log[];
-  deleteAllLogs(userId: UserId): LogList;
+  showAllLogsWithUserLevel(userId: UserId): Log[];
+  deleteAllLogsWithUserLevel(userId: UserId): LogList;
 }
 
-class Logger implements ILogger {
+export class Logger implements ILogger {
   userList: UserList;
   logList: LogList;
   constructor(userList: UserList, logList: LogList) {
@@ -23,7 +23,7 @@ class Logger implements ILogger {
   }
 
   createLog(log: LogType, userId: UserId, message: string): void {
-    this.userList.isItemAvailable(userId);
+    this.isUserInBase(userId);
     const newLog = new Log(userId, log, message, clock);
     this.logList.addItem(newLog.id, newLog);
   }
@@ -31,6 +31,7 @@ class Logger implements ILogger {
   deleteLog(userId: UserId, logId: LogId): void {
     this.isLogAvailable(logId);
     this.isUserInBase(userId);
+    this.isUserDeleted(userId);
     this.isPermissionMet(userId, logId);
     this.isLogDeleted(logId);
     const log = this.logList.list.get(logId);
@@ -40,15 +41,22 @@ class Logger implements ILogger {
 
   showLog(userId: UserId, logId: LogId): Log {
     this.isUserInBase(userId);
+    this.isUserDeleted(userId);
     this.isPermissionMet(userId, logId);
     return this.logList.list.get(logId);
   }
 
-  showAllLogs(userId: UserId): Log[] {
+  showAllLogsWithUserLevel(userId: UserId): Log[] {
     this.isUserInBase(userId);
+    this.isUserDeleted(userId);
     const Logs: Log[] = [];
+    const user = this.userList.list.get(userId);
     this.logList.list.forEach((element) => {
-      if (this.isPermissionMet(userId, element.id)) {
+      const userRoleLevel = user.roleLevel;
+      const logCreatorLevel = this.userList.list.get(
+        element.createdBy
+      ).roleLevel;
+      if (logCreatorLevel <= userRoleLevel && !element.deletedAt) {
         Logs.push(element);
       }
     });
@@ -58,7 +66,7 @@ class Logger implements ILogger {
     return Logs;
   }
 
-  deleteAllLogs(userId: UserId): LogList {
+  deleteAllLogsWithUserLevel(userId: UserId): LogList {
     let counter = 0;
     this.isUserInBase(userId);
     const user = this.userList.list.get(userId);
@@ -90,16 +98,21 @@ class Logger implements ILogger {
     }
   }
 
+  private isUserDeleted(userId: UserId): void {
+    if (this.userList.list.get(userId).deletedAt) {
+      throw new Error(`User: ${userId} is already deleted`);
+    }
+  }
+
   private isPermissionMet(userId: UserId, logId: LogId): string {
     const user = this.userList.list.get(userId);
     const logCreatorId = this.logList.list.get(logId).createdBy;
     const logCreatorLevel = this.userList.list.get(logCreatorId).roleLevel;
-    const logCreatorRole = this.userList.list.get(logCreatorId).role;
     if (user.roleLevel >= logCreatorLevel) {
       return "Permission granted";
     }
     throw new Error(
-      `Permission denied for ${user.role}, please contact someone with ${NUMBER_LEVEL_TO_ROLE_MAPPER[logCreatorRole]} level.`
+      `Permission denied for ${user.role}, please contact someone with at least ${NUMBER_LEVEL_TO_ROLE_MAPPER[logCreatorLevel]} level.`
     );
   }
 
@@ -110,20 +123,17 @@ class Logger implements ILogger {
   }
 }
 
-const admin1 = new User(USERS_TYPE.ADMIN, clock);
-const owner1 = new User(USERS_TYPE.OWNER, clock);
-const basic1 = new User(USERS_TYPE.BASIC, clock);
-const newUserList = new UserList();
-newUserList.addItem(admin1.id, admin1);
-newUserList.addItem(owner1.id, owner1);
-const newLogList = new LogList();
-const errorLog1 = new Log(admin1.id, LOGTYPE.ERROR, "test", clock);
-newLogList.addItem(errorLog1.id, errorLog1);
-const newLogger = new Logger(newUserList, newLogList);
-newLogger.createLog(LOGTYPE.DEBUG, admin1.id, "DEBUG");
-newLogger.createLog(LOGTYPE.DEBUG, owner1.id, "DEBUG");
-newUserList.deleteItem(admin1.id);
-newUserList.addItem(basic1.id, basic1);
-newUserList.deleteItem(basic1.id);
+// const admin1 = new User(USERS_TYPE.ADMIN, clock);
+// const owner1 = new User(USERS_TYPE.OWNER, clock);
+// const basic1 = new User(USERS_TYPE.BASIC, clock);
+// const newUserList = new UserList();
+// newUserList.addItem(admin1.id, admin1);
+// newUserList.addItem(basic1.id, basic1);
+// const newLogList = new LogList();
+// const errorLog1 = new Log(admin1.id, LOGTYPE.ERROR, "test", clock);
+// newLogList.addItem(errorLog1.id, errorLog1);
+// const newLogger = new Logger(newUserList, newLogList);
+// newLogger.createLog(LOGTYPE.DEBUG, admin1.id, "DEBUG");
+// newLogger.deleteLog(basic1.id, errorLog1.id);
 
-console.dir(newLogger, { depth: null });
+// console.dir(newLogger, { depth: null });
