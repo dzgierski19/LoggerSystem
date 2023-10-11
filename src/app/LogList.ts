@@ -4,9 +4,6 @@ import { clock } from "./Clock";
 import { randomUUID } from "crypto";
 import { UserId } from "./User";
 
-const APP_CREATOR = "APP_CREATOR";
-const APP_CREATOR_ID = randomUUID();
-
 export interface ILogList extends IItemList<LogId, Log> {
   deleteOne(logId: LogId, userId: UserId): void;
 }

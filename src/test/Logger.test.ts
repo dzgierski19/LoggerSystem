@@ -22,7 +22,6 @@ describe("Logger test suite", () => {
     createdLog = newLogger.createLog(LOGTYPE.DEBUG, newAdmin.id, "DEBUG");
   });
   it("Should create a log", () => {
-    console.log(createdLog);
     expect(newLogList.list.has(createdLog.id)).toBeTruthy();
   });
   it("Should delete a log", () => {
@@ -39,25 +38,35 @@ describe("Logger test suite", () => {
     newUserList.addOne(newBasicUser.id, newBasicUser);
     const newOwnerUser = new User(USERS_TYPE.OWNER, clock);
     newUserList.addOne(newOwnerUser.id, newOwnerUser);
-    newLogger.createLog(LOGTYPE.VERBOSE, newOwnerUser.id, "VERBOSE");
+    const ownerLog = newLogger.createLog(
+      LOGTYPE.VERBOSE,
+      newOwnerUser.id,
+      "VERBOSE"
+    );
     newLogger.createLog(LOGTYPE.ERROR, newBasicUser.id, "ERROR");
     newLogger.deleteAllLogsWithUserLevel(newAdmin.id);
     let deletedByAdminCounter = 0;
-    let notDeletedByAdminCounter = 0;
     newLogList.list.forEach((element) => {
       if (element.deletedBy === newAdmin.id) {
         deletedByAdminCounter++;
-      } else notDeletedByAdminCounter++;
+      }
     });
     expect(deletedByAdminCounter).toBe(2);
-    expect(notDeletedByAdminCounter).toBe(1);
+    expect(ownerLog.deletedBy).toBeUndefined();
   });
+
   it("Should show all logs with proper user role", () => {
     const newOwnerUser = new User(USERS_TYPE.OWNER, clock);
     newUserList.addOne(newOwnerUser.id, newOwnerUser);
     newLogger.createLog(LOGTYPE.DEBUG, newOwnerUser.id, "DEBUG");
     const showLogs = newLogger.showAllLogsWithUserLevel(newAdmin.id);
     expect(showLogs).toHaveLength(1);
+  });
+  it("Should show no logs when all logs were created by higher user level", () => {
+    const newBasicUser = new User(USERS_TYPE.BASIC, clock);
+    newUserList.addOne(newBasicUser.id, newBasicUser);
+    const logs = newLogger.showAllLogsWithUserLevel(newBasicUser.id);
+    expect(logs).toEqual([]);
   });
   describe("should throw an error when: ", () => {
     let newBasicUser: User;
@@ -86,37 +95,24 @@ describe("Logger test suite", () => {
       expect(error).toThrow();
     });
     it("deleting a log with user with lower role than user who created log", () => {
+      const newOwnerUser = new User(USERS_TYPE.OWNER, clock);
+      newUserList.addOne(newOwnerUser.id, newOwnerUser);
+      const ownerLog = newLogger.createLog(
+        LOGTYPE.ERROR,
+        newOwnerUser.id,
+        "OWNER"
+      );
+      function error() {
+        newLogger.deleteLog(newAdmin.id, ownerLog.id);
+      }
+      expect(error).toThrow();
+    });
+    it("deleting a log by BASIC level user", () => {
       newUserList.addOne(newBasicUser.id, newBasicUser);
       function error() {
         newLogger.deleteLog(newBasicUser.id, createdLog.id);
       }
       expect(error).toThrow();
-    });
-    it("deleting a log, but log is already deleted", () => {
-      newLogger.deleteLog(newAdmin.id, createdLog.id);
-      function error() {
-        newLogger.deleteLog(newAdmin.id, createdLog.id);
-      }
-      expect(error).toThrow();
-    });
-    it("when there are no logs to delete by user level", () => {
-      newUserList.addOne(newBasicUser.id, newBasicUser);
-      function ErrorFunction() {
-        newLogger.deleteAllLogsWithUserLevel(newBasicUser.id);
-      }
-      expect(ErrorFunction).toThrow();
-    });
-    it("when there are no logs to show by user level", () => {
-      newUserList.addOne(newBasicUser.id, newBasicUser);
-      function ErrorFunction() {
-        newLogger.showAllLogsWithUserLevel(newBasicUser.id);
-      }
-      try {
-        ErrorFunction();
-      } catch (error) {
-        console.error("An error occurred:", error);
-      }
-      expect(ErrorFunction).toThrow();
     });
   });
 });

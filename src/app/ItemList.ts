@@ -5,7 +5,9 @@ export interface IItemList<T, U extends { deletedAt?: Date }> {
   getOne(itemId: T): U;
 }
 
-export abstract class ItemList<T, U> implements IItemList<T, U> {
+export abstract class ItemList<T, U extends { deletedAt?: Date }>
+  implements IItemList<T, U>
+{
   list: Map<T, U> = new Map();
 
   constructor(private readonly itemType: "Log" | "User") {}
@@ -14,15 +16,15 @@ export abstract class ItemList<T, U> implements IItemList<T, U> {
     this.list.set(itemId, item);
   }
 
-  abstract deleteOne(itemId: T, userId: T): void;
-
   getOne(itemId: T) {
-    const item = this.getOne(itemId);
-    if (!item || !item.deletedAt) {
+    const item = this.list.get(itemId);
+    if (!item || item.deletedAt) {
       throw new Error(`${this.itemType} not found`);
     }
     return item;
   }
+
+  abstract deleteOne(itemId: T, userId: T): void;
 
   protected isItemAvailable(itemId: T) {
     if (!this.list.has(itemId)) {
