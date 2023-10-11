@@ -2,20 +2,26 @@ import { IItemList, ItemList } from "./ItemList";
 import { Log, LogId } from "./Log";
 import { clock } from "./Clock";
 import { randomUUID } from "crypto";
+import { UserId } from "./User";
 
 const APP_CREATOR = "APP_CREATOR";
 const APP_CREATOR_ID = randomUUID();
 
-interface ILogList extends IItemList<LogId, Log> {
-  deleteItem(logId: LogId): void;
+export interface ILogList extends IItemList<LogId, Log> {
+  deleteOne(logId: LogId, userId: UserId): void;
 }
 
 export class LogList extends ItemList<LogId, Log> implements ILogList {
-  deleteItem(logId: LogId): void {
+  constructor() {
+    super("Log");
+  }
+
+  deleteOne(logId: LogId, userId: UserId): void {
     this.isItemAvailable(logId);
     this.isDeleted(logId);
-    this.list.get(logId).deletedAt = clock();
-    this.list.get(logId).deletedBy = `${APP_CREATOR}: ${APP_CREATOR_ID}`;
+    const log = this.list.get(logId);
+    log.deletedAt = clock();
+    log.deletedBy = userId;
   }
 
   private isDeleted(logId: LogId) {

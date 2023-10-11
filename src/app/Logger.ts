@@ -2,48 +2,43 @@ import { Log, LogId } from "./Log";
 import { LOGTYPE, LogType } from "./LogType";
 import { NUMBER_LEVEL_TO_ROLE_MAPPER, USERS_TYPE, User, UserId } from "./User";
 import { clock } from "./Clock";
-import { UserList } from "./UserList";
-import { LogList } from "./LogList";
+import { IUserList, UserList } from "./UserList";
+import { ILogList, LogList } from "./LogList";
 
 interface ILogger {
-  userList: UserList;
-  logList: LogList;
-  createLog(log: LogType, userId: UserId, message: string): void;
+  createLog(log: LogType, userId: UserId, message: string): Log;
   deleteLog(userId: UserId, logId: LogId): void;
   showLog(userId: UserId, logId: LogId): Log;
   showAllLogsWithUserLevel(userId: UserId): Log[];
-  deleteAllLogsWithUserLevel(userId: UserId): LogList;
+  deleteAllLogsWithUserLevel(userId: UserId): ILogList;
 }
 
 export class Logger implements ILogger {
-  userList: UserList;
-  logList: LogList;
+  private readonly userList: IUserList;
+  private readonly logList: ILogList;
   constructor(userList: UserList, logList: LogList) {
     (this.userList = userList), (this.logList = logList);
   }
 
-  createLog(log: LogType, userId: UserId, message: string): void {
+  createLog(log: LogType, userId: UserId, message: string): Log {
     this.isUserInBase(userId);
     const newLog = new Log(userId, log, message, clock);
-    this.logList.addItem(newLog.id, newLog);
+    this.logList.addOne(newLog.id, newLog);
+    return newLog;
   }
 
   deleteLog(userId: UserId, logId: LogId): void {
-    this.isLogAvailable(logId);
     this.isUserInBase(userId);
     this.isUserDeleted(userId);
     this.isPermissionMet(userId, logId);
-    this.isLogDeleted(logId);
-    const log = this.logList.list.get(logId);
-    log.deletedAt = clock();
-    log.deletedBy = userId;
+    this.logList.deleteOne(logId, userId);
   }
 
   showLog(userId: UserId, logId: LogId): Log {
     this.isUserInBase(userId);
     this.isUserDeleted(userId);
     this.isPermissionMet(userId, logId);
-    return this.logList.list.get(logId);
+    return this.logList.getOne(logId);
   }
 
   showAllLogsWithUserLevel(userId: UserId): Log[] {
@@ -66,7 +61,7 @@ export class Logger implements ILogger {
     return Logs;
   }
 
-  deleteAllLogsWithUserLevel(userId: UserId): LogList {
+  deleteAllLogsWithUserLevel(userId: UserId): ILogList {
     let counter = 0;
     this.isUserInBase(userId);
     const user = this.userList.list.get(userId);
@@ -84,12 +79,6 @@ export class Logger implements ILogger {
       throw new Error("There are no logs at your permission level");
     }
     return this.logList;
-  }
-
-  private isLogDeleted(logId: LogId): void {
-    if (this.logList.list.get(logId).deletedAt) {
-      throw new Error(`Log: ${logId} is already deleted`);
-    }
   }
 
   private isUserInBase(userId: UserId): void {
@@ -115,27 +104,4 @@ export class Logger implements ILogger {
       `Permission denied for ${user.role}, please contact someone with at least ${NUMBER_LEVEL_TO_ROLE_MAPPER[logCreatorLevel]} level.`
     );
   }
-
-  private isLogAvailable(logId: LogId): void {
-    if (!this.logList.list.has(logId)) {
-      throw new Error("This log is not available");
-    }
-  }
 }
-
-// const admin1 = new User(USERS_TYPE.ADMIN, clock);
-// const owner1 = new User(USERS_TYPE.OWNER, clock);
-// const basic1 = new User(USERS_TYPE.BASIC, clock);
-// const newUserList = new UserList();
-// newUserList.addItem(admin1.id, admin1);
-// newUserList.addItem(basic1.id, basic1);
-// newUserList.addItem(owner1.id, owner1);
-// const newLogList = new LogList();
-// const newLogger = new Logger(newUserList, newLogList);
-// newLogger.createLog(LOGTYPE.DEBUG, admin1.id, "ADMIN");
-// newLogger.createLog(LOGTYPE.DEBUG, basic1.id, "BASIC");
-// newLogger.createLog(LOGTYPE.DEBUG, owner1.id, "OWNER2");
-
-// console.log(newLogger.showAllLogsWithUserLevel(admin1.id));
-
-// // console.dir(newLogger, { depth: null });
